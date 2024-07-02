@@ -80,7 +80,7 @@ class FEN20_16DXP:
         
         return bool(bits[input])
     
-    def get_status(self):
+    def get_status(self) -> dict:
         """ 
         Get the status of the device:
         FCE -> I/O-ASSISTANT Force Mode Active
@@ -99,6 +99,7 @@ class FEN20_16DXP:
             "V1LOW": bits[9],
             "DiagWarn": bits[0]
         }
+        return output
         
     def get_diagnostics(self) -> bool:
         """ I/O diagnostic detected """
