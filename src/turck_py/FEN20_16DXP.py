@@ -16,9 +16,14 @@ from .utils import decode_payload_to_bits, encode_bits_to_payload
 logger = logging.getLogger(__name__)
 
 class FEN20_16DXP:
-    def __init__(self, host, port):
+    def __init__(self,
+                 host: str,
+                 port: int,
+                 debug: bool = False,
+                 ):
         self.host = host
         self.port = port
+        self.debug = debug
 
         self.client = ModbusTcpClient(
             host,
@@ -26,7 +31,23 @@ class FEN20_16DXP:
             framer=Framer.SOCKET,
         )    
         
-    def start_connection(self):
+    def __enter__(self):
+        if self.debug:
+            return self
+        
+        self.connect()
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.debug:
+            return
+        
+        self.disconnect()
+        
+    def __del__(self):
+        self.disconnect()
+        
+    def connect(self):
         try:
             self.client.connect()
         except Exception as e:
@@ -34,10 +55,13 @@ class FEN20_16DXP:
             logger.error(e)
             raise e
         
-        self.get_outputs()
-        
-    def __del__(self):
-        self.client.close()
+    def disconnect(self):
+        try:
+            self.client.close()
+        except Exception as e:
+            logger.error(f"Error disconnecting from {self.host}:{self.port}")
+            logger.error(e)
+            raise e
     
     def is_connected(self) -> bool:
         """Check if the client is connected."""
@@ -52,6 +76,10 @@ class FEN20_16DXP:
             A dictionary with the state of the inputs.
             The key is the input number and the value is the state.
         """
+        if self.debug:
+            return {0: True, 1: True, 2: True, 3: True, 4: True, 5: True, 6: True, 7: True, 
+                    8: False, 9: False, 10: False, 11: False, 12: False, 13: False, 14: False, 15: False }
+        
         
         res = self.client.read_holding_registers(0, 1)
         res = BinaryPayloadDecoder.fromRegisters(res.registers, byteorder=Endian.BIG, wordorder=Endian.BIG)
@@ -138,6 +166,10 @@ class FEN20_16DXP:
         dict
             A dictionary where the keys are output numbers (0-15) and the values are boolean states (True/False).
         """
+        if self.debug:
+            return {0: False, 1: False, 2: False, 3: True, 4: False, 5: False, 6: False, 7: False, 
+                    8: False, 9: False, 10: False, 11: True, 12: False, 13: False, 14: False, 15: False }
+        
         res = self.client.read_holding_registers(0x0800, 1)
         res = BinaryPayloadDecoder.fromRegisters(res.registers, byteorder=Endian.BIG, wordorder=Endian.BIG)
         bits = decode_payload_to_bits(res)
