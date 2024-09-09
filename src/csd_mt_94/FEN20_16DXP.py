@@ -29,7 +29,17 @@ class FEN20_16DXP:
             framer=Framer.SOCKET,
         )    
         
-    def start_connection(self):
+    def __del__(self):
+        self.disconnect()
+        
+    def __enter__(self):
+        self.connect()
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.disconnect()
+        
+    def connect(self):
         try:
             self.client.connect()
         except Exception as e:
@@ -39,8 +49,13 @@ class FEN20_16DXP:
         
         self.get_outputs()
         
-    def __del__(self):
-        self.client.close()
+    def disconnect(self):
+        try:
+            self.client.close()
+        except Exception as e:
+            logger.error(f"Error disconnecting from {self.host}:{self.port}")
+            logger.error(e)
+            raise e
     
     def is_connected(self) -> bool:
         """Check if the client is connected."""
