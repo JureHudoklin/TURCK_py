@@ -4,9 +4,9 @@ from pymodbus.client import AsyncModbusTcpClient
 from pymodbus.client import ModbusTcpClient
 from pymodbus.constants import Endian
 from pymodbus.payload import BinaryPayloadDecoder
+from pymodbus.framer import FramerType
 from pymodbus import (
     ExceptionResponse,
-    Framer,
     ModbusException,
     pymodbus_apply_logging_config,
 )
@@ -28,7 +28,7 @@ class FEN20_16DXP:
         self.client = ModbusTcpClient(
             host,
             port=port,
-            framer=Framer.SOCKET,
+            framer=FramerType.SOCKET,
         )    
         
     def __enter__(self):
