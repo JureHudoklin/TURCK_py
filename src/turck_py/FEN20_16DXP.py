@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 from pymodbus.client import AsyncModbusTcpClient
 from pymodbus.client import ModbusTcpClient
@@ -12,6 +12,7 @@ from pymodbus import (
 )
 import logging
 from .utils import decode_payload_to_bits, encode_bits_to_payload
+from .thread_safe_wrapper import ThreadSafeClientWrapper
 
 logger = logging.getLogger(__name__)
 
@@ -29,43 +30,11 @@ class FEN20_16DXP:
             host,
             port=port,
             framer=FramerType.SOCKET,
-        )    
-        
-    def __enter__(self):
-        if self.debug:
-            return self
-        
-        self.connect()
-        return self
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.debug:
-            return
-        
-        self.disconnect()
-        
+        )
+        self.client = cast(ModbusTcpClient, ThreadSafeClientWrapper(self.client))
+   
     def __del__(self):
-        self.disconnect()
-        
-    def connect(self):
-        try:
-            self.client.connect()
-        except Exception as e:
-            logger.error(f"Error connecting to {self.host}:{self.port}")
-            logger.error(e)
-            raise e
-        
-    def disconnect(self):
-        try:
-            self.client.close()
-        except Exception as e:
-            logger.error(f"Error disconnecting from {self.host}:{self.port}")
-            logger.error(e)
-            raise e
-    
-    def is_connected(self) -> bool:
-        """Check if the client is connected."""
-        return self.client.is_socket_open()
+        self.client.stop()
    
     def get_inputs(self) -> dict:
         """ Get the state of the inputs.
